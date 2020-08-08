@@ -1,1 +1,1 @@
-# vehicle-auction-stream-processor
+# Vehicle Auction Stream Processor
