@@ -1,6 +1,7 @@
 package com.vladkrava.vehicle.auction.stream.processor.model
 
 import org.apache.spark.sql.Row
+import org.apache.spark.sql.types.{StringType, StructType}
 
 /**
  * Auction bid case class
@@ -52,8 +53,21 @@ object BidMapper {
    * @return `TraderIdValuePair` simplified representation of a `Bid`
    *
    */
-  def tradersBids(bid: Bid): TraderIdValuePair = {
-    TraderIdValuePair(bid.traderId, bid.value)
+  def tradersBidValues(bid: Bid): TraderBidValues = {
+    TraderBidValues(bid.traderId, bid.value)
+  }
+
+  /**
+   * Provides `Bid` schema
+   *
+   * @return `StructType` `Bid` schema
+   *
+   */
+  def schema(): StructType = {
+    new StructType()
+      .add(timestampRowName(), StringType, nullable = false)
+      .add(traderIdRowName(), StringType, nullable = false)
+      .add(vehicleIdRowName(), StringType, nullable = false)
   }
 
   /**
