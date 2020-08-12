@@ -1,7 +1,7 @@
 package com.vladkrava.vehicle.auction.stream.processor
 
 import org.apache.log4j.{Level, Logger}
-import org.apache.spark.sql.SparkSession
+import org.apache.spark.sql.{DataFrame, SparkSession}
 
 import scala.util.Properties
 
@@ -13,10 +13,14 @@ trait SparkApplication {
   def getOrCreateSparkSession(appName: String): SparkSession = {
     Logger.getLogger("org.apache.spark").setLevel(Level.INFO)
 
-    SparkSession.builder()
+    val spark = SparkSession.builder()
       .appName(appName)
       .master(getSparkMaster)
       .getOrCreate()
+
+    spark.sparkContext.setLogLevel("ERROR")
+
+    spark
   }
 
   def stopSession(session: SparkSession): Unit = {
@@ -32,5 +36,14 @@ trait SparkApplication {
       envVariableName.toUpperCase.replaceAll("""\.""", "_"),
       default
     )
+  }
+
+  def streamVehicles(spark: SparkSession): DataFrame = {
+    spark.readStream
+      .format("kafka")
+      .option("kafka.bootstrap.servers", "localhost:9092")
+      .option("subscribe", "vehicle.auction")
+      .option("startingOffsets", "latest")
+      .load()
   }
 }

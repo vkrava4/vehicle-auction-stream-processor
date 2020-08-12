@@ -3,28 +3,55 @@ package com.vladkrava.vehicle.auction.stream.processor
 import com.vladkrava.vehicle.auction.stream.processor.model.BidMapper.{bids, tradersBidValues}
 import com.vladkrava.vehicle.auction.stream.processor.model.RankedCategoryTraderMapper.rankedCategoryTrader
 import com.vladkrava.vehicle.auction.stream.processor.model.TraderMapper._
+import com.vladkrava.vehicle.auction.stream.processor.model.VehicleMapper._
 import com.vladkrava.vehicle.auction.stream.processor.model._
 import org.apache.log4j.Logger
+import org.apache.spark.broadcast.Broadcast
 import org.apache.spark.sql.expressions.Window
-import org.apache.spark.sql.functions.rank
-import org.apache.spark.sql.{Dataset, SparkSession}
+import org.apache.spark.sql.functions._
+import org.apache.spark.sql.streaming.DataStreamWriter
+import org.apache.spark.sql.types.StringType
+import org.apache.spark.sql.{Dataset, Row, SparkSession}
 
 object TopCategoryTraders extends SparkApplication {
 
-  val log: Logger = Logger.getLogger(TopCategoryTraders.getClass.toString)
+  private val log: Logger = Logger.getLogger(TopCategoryTraders.getClass.toString)
+
+  var topCategoryTradersBroadcast: Broadcast[Array[RankedCategoryTrader]] = _
 
   def main(args: Array[String]): Unit = {
     val spark = getOrCreateSparkSession(TopCategoryTraders.getClass.getName)
 
+    topCategoryTradersBroadcast = spark.sparkContext.broadcast(reprocessTopCategoryTraders(spark, tradersBatch, bidsBatch, 20).collect())
 
-    stopSession(spark)
+    processVehicleStream(spark)
+      .start()
+      .awaitTermination()
+  }
+
+  def processVehicleStream(spark: SparkSession): DataStreamWriter[Row] = {
+    import spark.implicits._
+
+    streamVehicles(spark).select(col(messageValueColumnName()).cast(StringType))
+      //      Parsing Kafka message
+      .select(from_json(col(messageValueColumnName()), VehicleMapper.schema()).as(messageAliasName()))
+      .select(vehicleIdMessageName(), categoryMessageName())
+      //      Mapping to the processed entity
+      .map(r => auctionTradersAdvice(r, topCategoryTradersBroadcast, 20))
+      .select(to_json(struct("*")) as "value")
+      //      Writing response to another topic
+      .writeStream
+      .format("kafka")
+      .outputMode("append")
+      .option("kafka.bootstrap.servers", "localhost:9092")
+      .option("topic", "vehicle.auction.traders.advice")
+      .option("checkpointLocation", "/tmp/vehicle/auction/traders/advice")
+
   }
 
   /**
    * Re-processes or makes initial processing in a batch of top historical traders by category
    * based on `processDistinctBids` results.
-   *
-   * Resulted `Dataset` will be cached i.e persisted with default storage level - `MEMORY_AND_DISK`
    *
    * @param spark         active `SparkSession` - entry point to programming Spark with the Dataset and DataFrame API
    * @param tradersBatch  a location of traders batch file
@@ -39,22 +66,16 @@ object TopCategoryTraders extends SparkApplication {
     val bidsFact = prepareDistinctBids(spark, bidsBatch)
     val tradersDimension = prepareDistinctTraders(spark, tradersBatch)
 
-    //    TODO: broadcast tradersDimension
-    //    TODO: experiment with  bidsFact repartition by traderId before joining
-    //    TODO: coalesce before caching
-
-    val topCategoryTradersCache = bidsFact
-      .join(tradersDimension, traderIdColumnName())
+    val topCategoryTradersResult = bidsFact
+      .join(broadcast(tradersDimension), traderIdColumnName())
       .groupBy(traderIdColumnName(), categoryColumnName()).agg(org.apache.spark.sql.functions.sum(bidValueColumnName()).as(categoryValueColumnName()))
       .withColumn(traderRankColumnName(), rank().over(Window.partitionBy(categoryColumnName()).orderBy(categoryValueColumn().desc_nulls_last)))
       .map(rankedCategoryTrader)
       .filter(_.traderRank <= maxTraderRank)
-      .cache()
-
 
     log.info("TopCategoryTraders reprocessed. Awaiting for next evaluation")
 
-    topCategoryTradersCache
+    topCategoryTradersResult
   }
 
   def prepareDistinctBids(spark: SparkSession, bidsBatch: String): Dataset[TraderBidValues] = {

@@ -41,6 +41,9 @@ dependencies {
     // Spark dependencies
     compile group: 'org.apache.spark', name: 'spark-core_2.12', version: '2.4.4'
     compile group: 'org.apache.spark', name: 'spark-sql_2.12', version: '2.4.4'
+    compile group: 'org.apache.spark', name: 'spark-avro_2.12', version: '2.4.4'
+    compile group: 'org.apache.spark', name: 'spark-sql-kafka-0-10_2.12', version: '2.4.4'
+
 
     // Use Scalatest for testing our library
     testCompile group: 'org.scalatest', name: 'scalatest_2.12', version: '3.2.0'

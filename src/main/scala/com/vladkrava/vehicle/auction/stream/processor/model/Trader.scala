@@ -137,6 +137,15 @@ object TraderMapper {
   }
 
   /**
+   * Provides Category Dataset `Column`
+   *
+   * @return Category Dataset `Column`
+   */
+  def categoryColumn(): ColumnName = {
+    new ColumnName(categoryTuple._2)
+  }
+
+  /**
    * Provides Category Value Dataset `Column`
    *
    * @return Category Value Dataset `Column`
