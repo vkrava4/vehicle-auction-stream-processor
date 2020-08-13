@@ -3,22 +3,23 @@ package com.vladkrava.vehicle.auction.stream.processor
 import org.apache.log4j.{Level, Logger}
 import org.apache.spark.sql.{DataFrame, SparkSession}
 
-import scala.util.Properties
-
-trait SparkApplication {
-
-  val appMasterProperty = "SPARK_MASTER"
-  val appMasterDefault = "local[*]"
+/**
+ * Spark Application
+ *
+ */
+trait SparkApplication extends CoreApplication {
 
   def getOrCreateSparkSession(appName: String): SparkSession = {
-    Logger.getLogger("org.apache.spark").setLevel(Level.INFO)
+    val sparkBuilder = SparkSession.builder().appName(appName)
 
-    val spark = SparkSession.builder()
-      .appName(appName)
-      .master(getSparkMaster)
-      .getOrCreate()
+    if (sparkMaster.isDefined) {
+      sparkBuilder.master(sparkMaster.get)
+    }
+
+    val spark = sparkBuilder.getOrCreate()
 
     spark.sparkContext.setLogLevel("ERROR")
+    Logger.getLogger("org.apache.spark").setLevel(Level.INFO)
 
     spark
   }
@@ -27,22 +28,11 @@ trait SparkApplication {
     session.stop()
   }
 
-  def getSparkMaster: String = {
-    envOrElseConfig(appMasterProperty, appMasterDefault)
-  }
-
-  def envOrElseConfig(envVariableName: String, default: String): String = {
-    Properties.envOrElse(
-      envVariableName.toUpperCase.replaceAll("""\.""", "_"),
-      default
-    )
-  }
-
   def streamVehicles(spark: SparkSession): DataFrame = {
     spark.readStream
-      .format("kafka")
-      .option("kafka.bootstrap.servers", "localhost:9092")
-      .option("subscribe", "vehicle.auction")
+      .format("org.apache.spark.sql.kafka010.KafkaSourceProvider")
+      .option("kafka.bootstrap.servers", getKafkaBootstrapServers)
+      .option("subscribe", getTopicVehicleAuction)
       .option("startingOffsets", "latest")
       .load()
   }

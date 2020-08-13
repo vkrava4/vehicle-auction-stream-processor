@@ -14,25 +14,35 @@ buildscript {
     }
     dependencies {
         classpath "gradle.plugin.com.github.maiflai:gradle-scalatest:0.26"
+        classpath "com.github.jengelman.gradle.plugins:shadow:6.0.0"
     }
 }
 
 plugins {
-    // Apply the scala plugin to add support for Scala
     id 'scala'
     id 'idea'
     id "com.github.maiflai.scalatest" version "0.26"
+    id "com.github.johnrengelman.shadow" version "6.0.0"
 }
 
 apply plugin: "com.github.maiflai.scalatest"
+apply plugin: "com.github.johnrengelman.shadow"
 
 repositories {
-    // Use jcenter for resolving dependencies.
     jcenter()
 }
 
 test {
     maxParallelForks = 1
+    environment "SPARK_MASTER", "local[*]"
+}
+
+shadowJar {
+    dependencies {
+        exclude(dependency('org.apache.spark:spark-core_2.12'))
+        exclude(dependency('org.apache.spark:spark-sql_2.12'))
+        exclude(dependency('org.scala-lang:scala-library'))
+    }
 }
 
 dependencies {
@@ -44,8 +54,7 @@ dependencies {
     compile group: 'org.apache.spark', name: 'spark-avro_2.12', version: '2.4.4'
     compile group: 'org.apache.spark', name: 'spark-sql-kafka-0-10_2.12', version: '2.4.4'
 
-
-    // Use Scalatest for testing our library
+    // Test dependencies
     testCompile group: 'org.scalatest', name: 'scalatest_2.12', version: '3.2.0'
     testRuntime 'com.vladsch.flexmark:flexmark-all:0.35.10'
 }
