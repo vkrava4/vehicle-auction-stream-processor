@@ -1,4 +1,4 @@
-package com.vladkrava.vehicle.auction.stream.processor
+package com.vladkrava.vehicle.auction
 
 import scala.util.Properties
 

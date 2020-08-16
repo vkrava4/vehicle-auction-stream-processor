@@ -1,4 +1,4 @@
-package com.vladkrava.vehicle.auction.stream.processor
+package com.vladkrava.vehicle.auction
 
 import org.apache.log4j.{Level, Logger}
 import org.apache.spark.sql.{DataFrame, SparkSession}
@@ -13,7 +13,12 @@ trait SparkApplication extends CoreApplication {
     val sparkBuilder = SparkSession.builder().appName(appName)
 
     if (sparkMaster.isDefined) {
+
+      //      Do not enable Hive for local Spark
       sparkBuilder.master(sparkMaster.get)
+      if (!sparkMaster.get.contains("local")) {
+        sparkBuilder.enableHiveSupport()
+      }
     }
 
     val spark = sparkBuilder.getOrCreate()

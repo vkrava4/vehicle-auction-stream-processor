@@ -1,0 +1,8 @@
+<!-- Executing bulk job every 12 hours-->
+<coordinator-app name="spark-top-category-traders-cdr" frequency="* 0/12 * * *" timezone="UTC" xmlns="uri:oozie:coordinator:0.5">
+    <action>
+        <workflow>
+            <app-path>${oozie.wf.application.path}</app-path>
+        </workflow>
+    </action>
+</coordinator-app>

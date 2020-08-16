@@ -1,14 +1,6 @@
-package com.vladkrava.vehicle.auction.stream.processor.model
+package com.vladkrava.vehicle.auction.model
 
-import org.apache.spark.broadcast.Broadcast
-import org.apache.spark.sql.Row
 import org.apache.spark.sql.types.{StringType, StructType}
-
-/**
- * Auction `AuctionTradersAdvice` case class
- *
- */
-case class AuctionTradersAdvice(vehicleId: String, category: String, traders: List[String])
 
 /**
  * Vehicle Mapper object responsible for providing mapping and validation logic from
@@ -34,26 +26,6 @@ object VehicleMapper {
     new StructType()
       .add(vehicleIdRowName(), StringType, nullable = false)
       .add(categoryRowName(), StringType, nullable = false)
-  }
-
-  /**
-   * Maps `Vehicle` to `AuctionTradersAdvice` case class with processed and broadcasted `RankedCategoryTrader`s
-   *
-   * @param row                   row of output from `Dataframe`
-   * @param rankedCategoryTraders processed and broadcasted array of `RankedCategoryTrader` using which an advice will be performed
-   * @param maxRank               represents a maximum number of `RankedCategoryTrader`s which are going to be populated
-   *                              to `AuctionTradersAdvice` based on category match
-   * @return mapped `AuctionTradersAdvice`s
-   *
-   */
-  def auctionTradersAdvice(row: Row, rankedCategoryTraders: Broadcast[Array[RankedCategoryTrader]], maxRank: Int): AuctionTradersAdvice = {
-    val vehicleId = row.getAs[String](vehicleIdRowName())
-    val category = row.getAs[String](categoryRowName())
-
-    AuctionTradersAdvice(
-      vehicleId,
-      category,
-      rankedCategoryTraders.value.toList.filter(_.category == category).map(_.traderId).take(maxRank))
   }
 
   /**

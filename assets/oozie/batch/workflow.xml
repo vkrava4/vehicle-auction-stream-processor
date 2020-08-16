@@ -1,0 +1,20 @@
+<workflow-app name="spark-top-category-traders-wf" xmlns="uri:oozie:workflow:0.5">
+    <start to="spark-action"/>
+    <action name="spark-action">
+        <spark xmlns="uri:oozie:spark-action:0.1">
+            <job-tracker>${jobTracker}</job-tracker>
+            <name-node>${nameNode}</name-node>
+            <master>${master}</master>
+            <name>Top Category Traders Spark Job</name>
+            <class>com.vladkrava.vehicle.auction.batch.processor.TopCategoryTraders</class>
+            <jar>${oozie.wf.application.path}vehicle-auction-stream-processor-all.jar</jar>
+            <arg>20</arg>
+        </spark>
+        <ok to="end"/>
+        <error to="kill"/>
+    </action>
+    <kill name="kill">
+        <message>Top Category Traders Spark Job, error: [${wf:errorMessage(wf:lastErrorNode())}]</message>
+    </kill>
+    <end name="end"/>
+</workflow-app>
