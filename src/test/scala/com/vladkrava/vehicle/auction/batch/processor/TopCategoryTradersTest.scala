@@ -1,7 +1,8 @@
-package com.vladkrava.vehicle.auction.stream.processor
+package com.vladkrava.vehicle.auction.batch.processor
 
-import com.vladkrava.vehicle.auction.stream.processor.TopCategoryTraders._
-import com.vladkrava.vehicle.auction.stream.processor.model.RankedCategoryTrader
+import com.vladkrava.vehicle.auction.batch.processor.TopCategoryTraders.{prepareDistinctBids, prepareDistinctTraders, reprocessTopCategoryTraders}
+import com.vladkrava.vehicle.auction.model.RankedCategoryTrader
+import com.vladkrava.vehicle.auction.stream.processor.AuctionAdvice.{getOrCreateSparkSession, stopSession}
 import org.apache.spark.sql.SparkSession
 import org.scalatest.BeforeAndAfterEach
 import org.scalatest.funsuite.AnyFunSuite
@@ -77,7 +78,7 @@ class TopCategoryTradersTest extends AnyFunSuite with BeforeAndAfterEach {
     val tradersTestBatchWithoutDuplicatesPath = getClass.getResource("/traders.simple.json").getPath
 
     //    WHEN
-    val actualTraders = prepareDistinctTraders(sparkSession, tradersTestBatchWithoutDuplicatesPath).collect()
+    val actualTraders = prepareDistinctTraders(sparkSession, tradersTestBatchWithDuplicatesPath).collect()
 
     //    THEN
     val deduplicatedReferenceTraders = prepareDistinctTraders(sparkSession, tradersTestBatchWithoutDuplicatesPath).collect()

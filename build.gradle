@@ -14,35 +14,53 @@ buildscript {
     }
     dependencies {
         classpath "gradle.plugin.com.github.maiflai:gradle-scalatest:0.26"
+        classpath "com.github.jengelman.gradle.plugins:shadow:6.0.0"
     }
 }
 
 plugins {
-    // Apply the scala plugin to add support for Scala
     id 'scala'
     id 'idea'
     id "com.github.maiflai.scalatest" version "0.26"
+    id "com.github.johnrengelman.shadow" version "6.0.0"
 }
 
 apply plugin: "com.github.maiflai.scalatest"
+apply plugin: "com.github.johnrengelman.shadow"
 
 repositories {
-    // Use jcenter for resolving dependencies.
     jcenter()
+}
+
+ext {
+    scalaVersion = '2.11.0'
+    sparkVersion = '2.3.0'
+    scalaForSparkVersion = '2.11'
 }
 
 test {
     maxParallelForks = 1
+    environment "SPARK_MASTER", "local[*]"
+}
+
+shadowJar {
+    dependencies {
+        exclude(dependency("org.apache.spark:spark-core_$rootProject.ext.scalaForSparkVersion"))
+        exclude(dependency("org.apache.spark:spark-sql_$rootProject.ext.scalaForSparkVersion"))
+
+        exclude(dependency('org.scala-lang:scala-library'))
+    }
 }
 
 dependencies {
-    implementation 'org.scala-lang:scala-library:2.12.8'
+    implementation group: 'org.scala-lang', name: 'scala-library', version: rootProject.ext.scalaVersion
 
     // Spark dependencies
-    compile group: 'org.apache.spark', name: 'spark-core_2.12', version: '2.4.4'
-    compile group: 'org.apache.spark', name: 'spark-sql_2.12', version: '2.4.4'
+    compile group: 'org.apache.spark', name: "spark-core_$rootProject.ext.scalaForSparkVersion", version: rootProject.ext.sparkVersion
+    compile group: 'org.apache.spark', name: "spark-sql_$rootProject.ext.scalaForSparkVersion", version: rootProject.ext.sparkVersion
+    compile group: 'org.apache.spark', name: "spark-sql-kafka-0-10_$rootProject.ext.scalaForSparkVersion", version: rootProject.ext.sparkVersion
 
-    // Use Scalatest for testing our library
-    testCompile group: 'org.scalatest', name: 'scalatest_2.12', version: '3.2.0'
+    // Test dependencies
+    testCompile group: 'org.scalatest', name: "scalatest_$rootProject.ext.scalaForSparkVersion", version: '3.2.0'
     testRuntime 'com.vladsch.flexmark:flexmark-all:0.35.10'
 }

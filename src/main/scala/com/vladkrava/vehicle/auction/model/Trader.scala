@@ -1,4 +1,4 @@
-package com.vladkrava.vehicle.auction.stream.processor.model
+package com.vladkrava.vehicle.auction.model
 
 import org.apache.spark.sql.types.{StringType, StructType}
 import org.apache.spark.sql.{ColumnName, Row}
@@ -25,6 +25,13 @@ case class TraderId(traderId: String)
 case class TraderBidValues(traderId: String, bidValue: Int)
 
 /**
+ * Auction `RankedCategoryTrader` case class
+ *
+ */
+case class RankedCategoryTrader(traderId: String, category: String, categoryValue: Long, traderRank: Int)
+
+
+/**
  * Trader Mapper object responsible for providing mapping and validation logic from
  * `Dataset` `Row`s to Trader case classes
  *
@@ -38,7 +45,7 @@ object TraderMapper {
   private val traderRankTuple: (String, String) = ("", "traderRank")
 
   private val uuidLength = 36
-  private val categoriesDelimiter = '/';
+  private val categoriesDelimiter = '/'
 
   /**
    * Provides logic for flat-mapping a `Dataset` `Row` to List of `Trader`s where traderId has one-to-many
@@ -78,14 +85,14 @@ object TraderMapper {
   /**
    * Validates parsed `Trader` `Dataset` fields
    *
-   * @param traderId  `Trader` field
+   * @param traderId      `Trader` field
    * @param rawCategories `Trader` field
    * @return `true` if parsed fields are valid, `false` otherwise
    *
    */
   private def isValid(traderId: String, rawCategories: String): Boolean = {
-      traderId != null && traderId.length == uuidLength &&
-        rawCategories != null && rawCategories.length > 0
+    traderId != null && traderId.length == uuidLength &&
+      rawCategories != null && rawCategories.length > 0
   }
 
   /**
@@ -98,6 +105,15 @@ object TraderMapper {
    */
   def traderIds(trader: Trader): TraderId = {
     TraderId(trader.traderId)
+  }
+
+  /**
+   * Provides Trader Id Dataset `Column`
+   *
+   * @return Trader Id Dataset `Column`
+   */
+  def traderIdColumn(): ColumnName = {
+    new ColumnName(traderIdTuple._2)
   }
 
   /**
@@ -137,6 +153,15 @@ object TraderMapper {
   }
 
   /**
+   * Provides Category Dataset `Column`
+   *
+   * @return Category Dataset `Column`
+   */
+  def categoryColumn(): ColumnName = {
+    new ColumnName(categoryTuple._2)
+  }
+
+  /**
    * Provides Category Value Dataset `Column`
    *
    * @return Category Value Dataset `Column`
@@ -160,5 +185,38 @@ object TraderMapper {
 
   private def categoryRowName(): String = {
     categoryTuple._1
+  }
+}
+
+object RankedCategoryTraderMapper {
+
+  private val traderIdTuple: (String, String) = ("traderId", "traderId")
+  private val categoryTuple: (String, String) = ("category", "category")
+  private val categoryValueTuple: (String, String) = ("categoryValue", "categoryValue")
+  private val traderRankTuple: (String, String) = ("traderRank", "traderRank")
+
+  def rankedCategoryTrader(row: Row): RankedCategoryTrader = {
+    val traderId = row.getAs[String](traderIdRowName())
+    val category = row.getAs[String](categoryRowName())
+    val categoryValue = row.getAs[Long](categoryValueRowName())
+    val traderRank = row.getAs[Int](traderRankRowName())
+
+    RankedCategoryTrader(traderId, category, categoryValue, traderRank)
+  }
+
+  private def traderIdRowName(): String = {
+    traderIdTuple._1
+  }
+
+  private def categoryRowName(): String = {
+    categoryTuple._1
+  }
+
+  private def categoryValueRowName(): String = {
+    categoryValueTuple._1
+  }
+
+  private def traderRankRowName(): String = {
+    traderRankTuple._1
   }
 }

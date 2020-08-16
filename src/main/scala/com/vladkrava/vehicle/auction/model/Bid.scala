@@ -1,4 +1,4 @@
-package com.vladkrava.vehicle.auction.stream.processor.model
+package com.vladkrava.vehicle.auction.model
 
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.types.{StringType, StructType}
@@ -48,7 +48,6 @@ object BidMapper {
    * Provides logic for re-mapping a `Bid` to `TraderIdValuePair` case class
    *
    * @note used to remove timestamp and vehicleId columns
-   *
    * @param bid an auction bid case class
    * @return `TraderIdValuePair` simplified representation of a `Bid`
    *
