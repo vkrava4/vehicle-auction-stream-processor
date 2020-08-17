@@ -6,7 +6,7 @@ import com.vladkrava.vehicle.auction.model.RankedCategoryTraderMapper.rankedCate
 import com.vladkrava.vehicle.auction.model.TraderMapper._
 import com.vladkrava.vehicle.auction.model._
 import org.apache.spark.sql.expressions.Window
-import org.apache.spark.sql.functions.{broadcast, collect_list, dense_rank}
+import org.apache.spark.sql.functions.{broadcast, collect_list, dense_rank, rank, row_number}
 import org.apache.spark.sql.types.StringType
 import org.apache.spark.sql.{Dataset, SparkSession}
 
@@ -28,9 +28,10 @@ object TopCategoryTraders extends SparkApplication {
 
     val spark = getOrCreateSparkSession(TopCategoryTraders.getClass.getName)
 
-    reprocessTopCategoryTraders(spark, getTradersBatchPath, getBidsBatchPath, args(0).toInt)
-      //      Normalising results before storing by category
-      .groupBy(categoryColumn().as(categoryColumnName())).agg(collect_list("traderId").cast(StringType).as("category_top_traders"))
+    val categoryTraders = reprocessTopCategoryTraders(spark, getTradersBatchPath, getBidsBatchPath, args(0).toInt)
+
+    //      Normalising results before storing by category
+    categoryTraders.groupBy(categoryColumn().as(categoryColumnName())).agg(collect_list("traderId").cast(StringType).as("category_top_traders"))
       .write
       .format("orc")
       .mode("overwrite")
@@ -43,8 +44,10 @@ object TopCategoryTraders extends SparkApplication {
    * Re-processes or makes initial processing in a batch of top historical traders by category
    * based on `processDistinctBids` results.
    *
-   * @note for ranking a `dense_rank` over `rank` is chosen in order to leave no gaps in a ranking sequence when there are ties,
+   * @note for ranking a `row_number` over `rank` or `dense_rank` is chosen in order to leave no gaps or collisions in a ranking sequence,
    *       i.e to avoid having the same rank for multiple traders with identical values
+   * @note no `coalesce` is done after filtering stage for performance reasons, as resulted `Dataset` will be loaded to
+   *       Hive which eliminates a need of this
    * @param spark         active `SparkSession` - entry point to programming Spark with the Dataset and DataFrame API
    * @param tradersBatch  a location of traders batch file
    * @param bidsBatch     a location of bids batch file
@@ -59,7 +62,7 @@ object TopCategoryTraders extends SparkApplication {
     val topCategoryTradersResult = bidsFact
       .join(broadcast(tradersDimension), traderIdColumnName())
       .groupBy(traderIdColumnName(), categoryColumnName()).agg(org.apache.spark.sql.functions.sum(bidValueColumnName()).as(categoryValueColumnName()))
-      .withColumn(traderRankColumnName(), dense_rank().over(Window.partitionBy(categoryColumnName()).orderBy(categoryValueColumn().desc_nulls_last)))
+      .withColumn(traderRankColumnName(), row_number().over(Window.partitionBy(categoryColumnName()).orderBy(categoryValueColumn().desc_nulls_last)))
       .map(rankedCategoryTrader)
       .filter(_.traderRank <= maxTraderRank)
 
@@ -76,6 +79,13 @@ object TopCategoryTraders extends SparkApplication {
       .map(tradersBidValues)
   }
 
+  /**
+   * Mapping, de-normalising and de-duplicating Traders dimension table
+   *
+   * @note no repartition is done in this step for performance reasons, as resulted `Dataset`
+   *       will be broadcasted for fact table
+   *
+   */
   def prepareDistinctTraders(spark: SparkSession, tradersBatch: String): Dataset[Trader] = {
     import spark.implicits._
 
