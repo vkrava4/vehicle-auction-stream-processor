@@ -1,3 +1,4 @@
+[![Build Status](https://travis-ci.com/vkrava4/vehicle-auction-stream-processor.svg?token=yxPDDuZpoziRqU8z5Dvz&branch=master)](https://travis-ci.com/vkrava4/vehicle-auction-stream-processor)
 # Vehicle Auction Stream Processor
 
 ## Quick Overview
@@ -37,7 +38,10 @@ There is a number of predefined entities using which the outcome should be done:
  - **Scala** - fast (vs. Python) and laconic (vs. Java) solution which smoothly integrates the features of Apache Spark and provides support for object-oriented and functional programming.
  - **Hadoop / Azure HDInsight** provides access to [Azure Marketplace](https://azuremarketplace.microsoft.com/en-us/marketplace/), 
  meaning Spark, Kafka, YARN, Oozie, etc as well as internal routing could be installed and configured withing 1 click _(Result with a minimum configuration)_. 
- Personally, however, I prefer to work with Mesos and Chronos vs. YARN and Oozie due to their versatility and transparency.
+ Personally, however, I prefer to work with Mesos and Chronos vs. YARN and Oozie due to their versatility and transparency. 
+ Yet another aspect reason why Azure HDInsight been chosen as a cloud provider is an ability to use Spark and Kafka clusters for free during 
+ Free Trial period, while AWS doesn't provide EMR as an option for 
+ [Free Tier](https://aws.amazon.com/free/?all-free-tier.sort-by=item.additionalFields.SortRank&all-free-tier.sort-order=asc&awsf.Free%20Tier%20Types=*all&awsf.Free%20Tier%20Categories=*all&awsm.page-all-free-tier=6).
  - **Apache Hive** is used in order to share resulted ranked traders from `TopCategoryTraders` bulk job to `AuctionAdvice` 
  Spark stream application in the most efficient manor, i.e no restarts `AuctionAdvice`, be able to get the latest data anytime, 
  decoupled lifecycle and somewhat audit log.  
