@@ -13,12 +13,12 @@ trait SparkApplication extends CoreApplication {
     val sparkBuilder = SparkSession.builder().appName(appName)
 
     if (sparkMaster.isDefined) {
-
-      //      Do not enable Hive for local Spark
       sparkBuilder.master(sparkMaster.get)
       if (!sparkMaster.get.contains("local")) {
         sparkBuilder.enableHiveSupport()
       }
+    } else {
+      sparkBuilder.enableHiveSupport()
     }
 
     val spark = sparkBuilder.getOrCreate()

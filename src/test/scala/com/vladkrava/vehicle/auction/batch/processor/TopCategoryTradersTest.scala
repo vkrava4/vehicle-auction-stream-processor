@@ -132,6 +132,34 @@ class TopCategoryTradersTest extends AnyFunSuite with BeforeAndAfterEach {
     }
   }
 
+  test("Should (re) process TopCategoryTraders per category based on 'bids.simple.json' and 'traders.simple.json' batch data without collisions by traderRank") {
+    //    GIVEN
+    val givenMaxTraderRank = 20
+
+    val bidsTestBatchPath = getClass.getResource("/bids.collisions.json").getPath
+    val tradersTestBatchPath = getClass.getResource("/traders.collisions.json").getPath
+
+    //    Expected result: ranked by total bids per vehicle category trader id's
+    val expectedResult: Seq[RankedCategoryTrader] = Seq(
+      //  there is a collision by categoryValue and category which resolved by traderRank with row_number() function
+      RankedCategoryTrader("0e8b3c0f-62e4-4fcb-8729-8c0362d6345c", "Station", 1, 1),
+      RankedCategoryTrader("202d0a2b-7c24-4c71-8f20-2dd69bf6aba1", "Compact", 1, 1),
+      RankedCategoryTrader("162d0a2b-7c24-4c71-8f20-2dd69bf6cfa7", "Compact", 1, 2),
+      RankedCategoryTrader("0e8b3c0f-62e4-4fcb-8729-8c0362d6345c", "Coupe", 1, 1)
+    )
+
+    //    WHEN
+    val rankedCategoryTraders = reprocessTopCategoryTraders(sparkSession, tradersTestBatchPath, bidsTestBatchPath, givenMaxTraderRank).collect()
+
+    rankedCategoryTraders.foreach(println)
+
+    //    THEN: expected and actual data should match
+    assert(rankedCategoryTraders.length == expectedResult.length)
+    for (actualRankedTrader <- rankedCategoryTraders) {
+      assert(expectedResult.contains(actualRankedTrader))
+    }
+  }
+
   test("Should (re) process with resolved duplicates TopCategoryTraders per category based on 'bids.duplicated.json' and 'traders.duplicated.json' batch data") {
     //    GIVEN
     val givenMaxTraderRank = 20
