@@ -3,6 +3,9 @@ language: scala
 scala:
   - 2.11.0
 
+jdk:
+  - openjdk8
+
 before_script:
   - gradle assemble
   - wget https://archive.apache.org/dist/spark/spark-2.3.2/spark-2.3.2-bin-hadoop2.7.tgz
