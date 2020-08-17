@@ -131,7 +131,7 @@ vehicle-auction-stream-processor-all.jar
 Kafka producer application is present on the Kafka node:
 ```
 vssh@hn0-kafka:~$ ls
-streamer-0.0.1-SNAPSHOT.jar
+streamer-0.0.1.jar
 ```
 
 ### Environment
@@ -188,13 +188,13 @@ vssh@hn0-spark:~$ spark-submit --class com.vladkrava.vehicle.auction.stream.proc
 
 **Starting Kafka producer application**
 ```
-vssh@hn0-kafka:~$ java -jar streamer-0.0.1-SNAPSHOT.jar STREAM 10 1000
+vssh@hn0-kafka:~$ java -jar streamer-0.0.1.jar STREAM 10 1000
 ```
 _*where `STREAM` is a command name, `10` messages to be sent, with `1000`ms delay between each_
 
 
 **Listening to processed results**
-`streamer-0.0.1-SNAPSHOT.jar` has enabled consumer application, subscribed by default to 
+`streamer-0.0.1.jar` has enabled consumer application, subscribed by default to 
 `vehicle.auction.traders.advice` for results and printing an output once message arrives.
 
 **Producer / Consumer application output**
