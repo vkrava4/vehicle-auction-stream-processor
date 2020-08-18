@@ -1,2 +1,13 @@
+# IDE configs
+.idea
+
+# Ignore Gradle project-specific cache directory
+.gradle/
+
+# Ignore Gradle build output directory
+build
+
+# Other Artifacts
 *.class
 *.log
+spark-warehouse/
